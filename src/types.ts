@@ -23,10 +23,11 @@ export const COFFEE_MENU: CoffeeConfig[] = [
 export interface Addon {
   id: string;
   name: string;
+  nameZh: string;
   timeModifier: number; // in minutes
 }
 
 export const ADDONS: Addon[] = [
-  { id: 'sugar', name: 'Sugar (+5m)', timeModifier: 5 },
-  { id: 'extra_shot', name: 'Extra Shot (-5m)', timeModifier: -5 },
+  { id: 'sugar', name: 'Sugar (+5m)', nameZh: '加糖', timeModifier: 5 },
+  { id: 'extra_shot', name: 'Extra Shot (-5m)', nameZh: '加浓', timeModifier: -5 },
 ];

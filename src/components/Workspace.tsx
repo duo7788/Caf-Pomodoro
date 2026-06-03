@@ -4,7 +4,7 @@ import { CoffeeConfig, ADDONS } from '../types';
 import { Disc, Square, Pause, Play, ArrowLeft } from 'lucide-react';
 import { useTimer } from '../hooks/useTimer';
 import { addCup, recordCountdownFocus } from '../stats';
-import { playChime } from '../sound';
+import { playChime, startAmbience, stopAmbience } from '../sound';
 
 interface WorkspaceProps {
   coffeeConfig: CoffeeConfig;
@@ -34,12 +34,19 @@ export function Workspace({ coffeeConfig, selectedAddons, onBack }: WorkspacePro
 
   const timer = useTimer(initialDurationSeconds, { autoStart: true, onComplete: handleComplete });
 
-  // 离开本页时还原标签页标题
+  // 离开本页时还原标签页标题，并确保环境音停止
   useEffect(() => {
     return () => {
       document.title = 'Café Pomodoro';
+      stopAmbience();
     };
   }, []);
+
+  // Ambience 开关 → 真正播放/停止合成环境音
+  useEffect(() => {
+    if (musicPlaying) startAmbience();
+    else stopAmbience();
+  }, [musicPlaying]);
 
   // 啜饮 / 圈痕的阶梯数：至少 3 口，长会话每 5 分钟一口
   const numSips = useMemo(
@@ -127,7 +134,7 @@ export function Workspace({ coffeeConfig, selectedAddons, onBack }: WorkspacePro
         </button>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-4xl px-4 mt-8">
+      <div className="relative z-10 flex flex-col items-center justify-center w-full max-w-4xl px-4">
         {/* Title & Status */}
         <div className="text-center mb-6">
           <h2 className="font-serif text-5xl md:text-6xl text-[#f8f5f0] mb-3 tracking-wide drop-shadow-sm">
@@ -139,7 +146,7 @@ export function Workspace({ coffeeConfig, selectedAddons, onBack }: WorkspacePro
         </div>
 
         {/* Center: The Coffee Cup */}
-        <div className="flex-shrink-0 relative w-80 h-80 sm:w-96 sm:h-96 md:w-[32rem] md:h-[32rem] lg:w-[38rem] lg:h-[38rem] mb-8">
+        <div className="flex-shrink-0 relative w-[min(32rem,52vh,84vw)] h-[min(32rem,52vh,84vw)] mb-6">
           <CoffeeCup
             progress={progress}
             color={coffeeConfig.color}

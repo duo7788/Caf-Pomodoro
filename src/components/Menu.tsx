@@ -295,7 +295,10 @@ export function Menu({ onStart }: MenuProps) {
                             <button key={addon.id} onClick={() => toggleAddon(addon.id)}
                               className={`w-full py-4 px-5 text-base font-serif text-left text-[#3e2723] ${SELECT_BASE} ${selectTone(isSelected)}`}
                             >
-                              {addon.name}
+                              <span className="inline-flex items-baseline gap-2">
+                                <span>{addon.name}</span>
+                                <span className="font-serif text-base text-[#9c8a72] tracking-[0.15em]">{addon.nameZh}</span>
+                              </span>
                             </button>
                           );
                         })}

@@ -261,7 +261,7 @@ export function FocusWorkspace({ coffeeConfig, selectedAddons, onBack }: FocusWo
             </div>
 
             <div
-              className="flex-shrink-0 relative w-80 h-80 sm:w-96 sm:h-96 md:w-[32rem] md:h-[32rem] lg:w-[36rem] lg:h-[36rem] mb-6 transition-opacity duration-500"
+              className="flex-shrink-0 relative w-[min(32rem,52vh,84vw)] h-[min(32rem,52vh,84vw)] mb-6 transition-opacity duration-500"
               style={{ opacity: !ended && attention.reading.state === 'AWAY' ? 0.45 : 1 }}
             >
               <CoffeeCup
