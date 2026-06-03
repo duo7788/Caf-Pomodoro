@@ -1,0 +1,6 @@
+{
+  "name": "Café Pomodoro",
+  "description": "A retro-elegant Pomodoro timer that uses a decreasing cup of coffee to visualize time remaining.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
