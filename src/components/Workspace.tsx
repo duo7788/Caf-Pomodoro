@@ -3,7 +3,7 @@ import { CoffeeCup, type RingMark } from './CoffeeCup';
 import { CoffeeConfig, ADDONS } from '../types';
 import { Disc, Square, Pause, Play, ArrowLeft } from 'lucide-react';
 import { useTimer } from '../hooks/useTimer';
-import { addCup } from '../stats';
+import { addCup, recordCountdownFocus } from '../stats';
 import { playChime } from '../sound';
 
 interface WorkspaceProps {
@@ -27,6 +27,8 @@ export function Workspace({ coffeeConfig, selectedAddons, onBack }: WorkspacePro
   const handleComplete = () => {
     playChime();
     setCupsToday(addCup());
+    // 自然完成：整杯时长即一段完整专注，刷新「最长专注记录」
+    recordCountdownFocus(initialDurationSeconds * 1000);
     document.title = '☕ 喝完了 · Café Pomodoro';
   };
 
@@ -71,6 +73,8 @@ export function Workspace({ coffeeConfig, selectedAddons, onBack }: WorkspacePro
   };
 
   const handleStopEarly = () => {
+    // 提前结束不算「完成一杯」，但已专注的这段时间仍计入「最长专注记录」
+    recordCountdownFocus((initialDurationSeconds - timer.remaining) * 1000);
     timer.stop();
     setStopped(true);
   };

@@ -1,15 +1,16 @@
-// 「今天喝了几杯」「今天专注多久」：仅本地存储，按自然日重置。
-const KEY = 'cafe-pomodoro-cups';
-const FOCUS_KEY = 'cafe-pomodoro-focus';
+// 首页左侧的「今日记录」：仅本地存储，按自然日重置。
+//  - cups          今天喝了几杯（倒计时自然完成 + 正计时每结束一杯各记一杯）
+//  - rings         正计时累计圈痕数（= 被打断的分心次数）
+//  - focusSessions 今天发生过几次正计时（用于决定是否展示「圈痕」一行）
+//  - longestFocusMs 今天最长的一段专注（倒计时取该杯时长；正计时取该杯中最长的单段心流；跨两种模式取最大）
+const KEY = 'cafe-pomodoro-stats';
 
-interface CupRecord {
+export interface DayStats {
   date: string; // YYYY-MM-DD（本地时区）
-  count: number;
-}
-
-interface FocusRecord {
-  date: string;
-  ms: number;
+  cups: number;
+  rings: number;
+  focusSessions: number;
+  longestFocusMs: number;
 }
 
 function today(): string {
@@ -18,62 +19,56 @@ function today(): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-function read(): CupRecord {
+function empty(): DayStats {
+  return { date: today(), cups: 0, rings: 0, focusSessions: 0, longestFocusMs: 0 };
+}
+
+function read(): DayStats {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const r = JSON.parse(raw) as CupRecord;
-      if (r.date === today()) return r;
+      const r = JSON.parse(raw) as Partial<DayStats>;
+      if (r.date === today()) return { ...empty(), ...r, date: today() };
     }
   } catch {
     /* ignore */
   }
-  return { date: today(), count: 0 };
+  return empty();
 }
 
-/** 今天已完成的杯数 */
-export function getCupsToday(): number {
-  return read().count;
+function write(s: DayStats): void {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(s));
+  } catch {
+    /* ignore */
+  }
 }
 
-/** 记一杯（自然完成时调用），返回累计后的今日杯数 */
+/** 今天的全部记录（首页读取用） */
+export function getStatsToday(): DayStats {
+  return read();
+}
+
+/** 记一杯（倒计时自然完成 / 正计时结束这一杯时调用），返回累计后的今日杯数 */
 export function addCup(): number {
-  const rec = read();
-  const next: CupRecord = { date: today(), count: rec.count + 1 };
-  try {
-    localStorage.setItem(KEY, JSON.stringify(next));
-  } catch {
-    /* ignore */
-  }
-  return next.count;
+  const s = read();
+  s.cups += 1;
+  write(s);
+  return s.cups;
 }
 
-function readFocus(): FocusRecord {
-  try {
-    const raw = localStorage.getItem(FOCUS_KEY);
-    if (raw) {
-      const r = JSON.parse(raw) as FocusRecord;
-      if (r.date === today()) return r;
-    }
-  } catch {
-    /* ignore */
-  }
-  return { date: today(), ms: 0 };
+/** 正计时结束一杯：记录本杯圈痕数 + 最长单段心流，并标记发生过一次正计时 */
+export function recordFocusSession(rings: number, longestSegmentMs: number): void {
+  const s = read();
+  s.focusSessions += 1;
+  s.rings += Math.max(0, rings);
+  s.longestFocusMs = Math.max(s.longestFocusMs, Math.max(0, longestSegmentMs));
+  write(s);
 }
 
-/** 今天累计专注时长（毫秒） */
-export function getFocusMsToday(): number {
-  return readFocus().ms;
-}
-
-/** 累加一段专注时长（正计时这一杯结束时调用），返回今日累计毫秒 */
-export function addFocusMs(ms: number): number {
-  const rec = readFocus();
-  const next: FocusRecord = { date: today(), ms: rec.ms + Math.max(0, ms) };
-  try {
-    localStorage.setItem(FOCUS_KEY, JSON.stringify(next));
-  } catch {
-    /* ignore */
-  }
-  return next.ms;
+/** 倒计时一杯结束：用本杯专注时长刷新「最长专注记录」 */
+export function recordCountdownFocus(ms: number): void {
+  const s = read();
+  s.longestFocusMs = Math.max(s.longestFocusMs, Math.max(0, ms));
+  write(s);
 }

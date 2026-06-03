@@ -52,10 +52,12 @@ export function useCoffeeLevel(running: boolean, onEmpty?: () => void) {
   const [level, setLevel] = useState(1);
   const [rings, setRings] = useState<RingMark[]>([]);
   const [totalFocusMs, setTotalFocusMs] = useState(0);
+  const [maxFocusMs, setMaxFocusMs] = useState(0);
 
   const levelRef = useRef(1);
   const focusMsRef = useRef(0); // 当前这段专注的时长
   const totalFocusRef = useRef(0); // 本杯累计专注时长
+  const maxFocusRef = useRef(0); // 本杯最长的单段心流
   const distractAccumRef = useRef(0); // 当前分心累计（用于触发下一口）
   const attnRef = useRef<AttnState>('IDLE');
   const lastRef = useRef(0);
@@ -73,6 +75,7 @@ export function useCoffeeLevel(running: boolean, onEmpty?: () => void) {
     if (levelRef.current <= 0) {
       emptiedRef.current = true;
       setTotalFocusMs(totalFocusRef.current);
+      setMaxFocusMs(maxFocusRef.current);
       onEmptyRef.current?.();
     }
   }, []);
@@ -102,6 +105,7 @@ export function useCoffeeLevel(running: boolean, onEmpty?: () => void) {
     levelRef.current = 1;
     focusMsRef.current = 0;
     totalFocusRef.current = 0;
+    maxFocusRef.current = 0;
     distractAccumRef.current = 0;
     attnRef.current = 'IDLE';
     lastEmitRef.current = 0;
@@ -109,6 +113,7 @@ export function useCoffeeLevel(running: boolean, onEmpty?: () => void) {
     setLevel(1);
     setRings([]);
     setTotalFocusMs(0);
+    setMaxFocusMs(0);
   }, []);
 
   useEffect(() => {
@@ -125,6 +130,7 @@ export function useCoffeeLevel(running: boolean, onEmpty?: () => void) {
         // 专注：液面完全不动，只累计心流时长
         focusMsRef.current += sdt * 1000;
         totalFocusRef.current += sdt * 1000;
+        if (focusMsRef.current > maxFocusRef.current) maxFocusRef.current = focusMsRef.current;
       } else if (st === 'DISTRACTED') {
         // 持续看屏：每满一个间隔再喝一口
         distractAccumRef.current += sdt * 1000;
@@ -140,6 +146,7 @@ export function useCoffeeLevel(running: boolean, onEmpty?: () => void) {
       if (now - lastEmitRef.current >= FOCUS_EMIT_MS) {
         lastEmitRef.current = now;
         setTotalFocusMs(totalFocusRef.current);
+        setMaxFocusMs(maxFocusRef.current);
       }
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -147,5 +154,5 @@ export function useCoffeeLevel(running: boolean, onEmpty?: () => void) {
     return () => cancelAnimationFrame(rafRef.current);
   }, [running, gulp]);
 
-  return { level, rings, totalFocusMs, ingest, reset };
+  return { level, rings, totalFocusMs, maxFocusMs, ingest, reset };
 }

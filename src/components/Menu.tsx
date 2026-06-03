@@ -2,11 +2,31 @@ import { useState, useEffect } from 'react';
 import { CoffeeType, FocusMode, COFFEE_MENU, ADDONS } from '../types';
 import { Coffee, Play, ChevronRight, ChevronLeft, Timer, ScanFace } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getCupsToday, getFocusMsToday } from '../stats';
+import { getStatsToday } from '../stats';
 
 interface MenuProps {
   onStart: (coffee: CoffeeType, addons: string[], mode: FocusMode) => void;
 }
+
+/** 「最长专注记录」展示用：小时/分钟/秒 */
+function formatFocus(ms: number): string {
+  const sec = Math.round(ms / 1000);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h} 时 ${m} 分`;
+  if (m > 0) return `${m} 分钟`;
+  return `${sec} 秒`;
+}
+
+/**
+ * 选中态统一以「咖啡单品」为基准：圆角 + 底边线；
+ * 选中＝浅底 + 深色底边线，未选＝透明、悬停浅底。
+ */
+const SELECT_BASE = 'rounded-lg border-b transition-all duration-300';
+const selectTone = (active: boolean) =>
+  active
+    ? 'bg-[#f4efe8] border-[#4a3b32]'
+    : 'bg-transparent border-transparent hover:bg-[#f8f5f0]';
 
 export function Menu({ onStart }: MenuProps) {
   const [mode, setMode] = useState<FocusMode>('countdown');
@@ -14,8 +34,7 @@ export function Menu({ onStart }: MenuProps) {
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [menuPage, setMenuPage] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [cupsToday] = useState(getCupsToday);
-  const [focusMinToday] = useState(() => Math.round(getFocusMsToday() / 60000));
+  const [stats] = useState(getStatsToday);
 
   // 书本按设计尺寸 1400×940 等比缩放填满视口（字号随之放大），
   // 避免在大窗口下封顶居中、四周留白、字显得又小又空。
@@ -102,12 +121,7 @@ export function Menu({ onStart }: MenuProps) {
     <button
       key={coffee.id}
       onClick={() => setSelectedCoffee(coffee.id)}
-      className={`w-full text-left ${compact ? 'py-3 px-4' : 'py-4 px-5'} rounded-lg flex items-center justify-between transition-all duration-300 border-b
-        ${selectedCoffee === coffee.id
-          ? 'bg-[#f4efe8] border-[#4a3b32]'
-          : 'bg-transparent border-transparent hover:bg-[#f8f5f0]'
-        }
-      `}
+      className={`w-full text-left ${compact ? 'py-3 px-4' : 'py-4 px-5'} flex items-center justify-between ${SELECT_BASE} ${selectTone(selectedCoffee === coffee.id)}`}
     >
       <div className="flex flex-col">
         <span className="flex items-baseline gap-2">
@@ -151,12 +165,31 @@ export function Menu({ onStart }: MenuProps) {
             and enjoy the ambient percolation of your thoughts.
           </p>
 
-          {(cupsToday > 0 || focusMinToday > 0) && (
-            <p className="mt-8 text-sm text-[#9a8b7c] font-serif tracking-wide">
-              {cupsToday > 0 && <>{cupsToday} 杯 ☕</>}
-              {cupsToday > 0 && focusMinToday > 0 && ' · '}
-              {focusMinToday > 0 && <>专注 {focusMinToday} 分钟</>}
-            </p>
+          {(stats.cups > 0 || stats.focusSessions > 0 || stats.longestFocusMs > 0) && (
+            <div className="mt-10 flex flex-col items-center gap-2">
+              {/* 最长专注记录 —— 大字主角 */}
+              {stats.longestFocusMs > 0 && (
+                <div className="text-center mb-1">
+                  <div className="text-4xl font-serif text-[#f0e9da] tracking-wide drop-shadow-sm leading-none">
+                    {formatFocus(stats.longestFocusMs)}
+                  </div>
+                  <div className="mt-2 text-[11px] tracking-[0.25em] uppercase text-[#9a8b7c]">
+                    最长专注记录
+                  </div>
+                </div>
+              )}
+
+              {/* 杯数 · 圈痕 —— 小字 */}
+              <p className="text-sm text-[#9a8b7c] font-serif tracking-wide">
+                今天 {stats.cups} 杯 ☕
+                {stats.focusSessions > 0 && <> · {stats.rings} 道圈痕</>}
+              </p>
+              {stats.focusSessions > 0 && (
+                <p className="text-[10px] text-[#7d7062] tracking-wide">
+                  圈痕 = 正计时中被打断的分心次数
+                </p>
+              )}
+            </div>
           )}
         </div>
 
@@ -193,8 +226,7 @@ export function Menu({ onStart }: MenuProps) {
                     <h3 className="text-sm font-semibold tracking-widest text-[#8a7964] uppercase mb-2">Mode</h3>
                     <div className="flex flex-col gap-2">
                       <button onClick={() => setMode('countdown')}
-                        className={`w-full p-3 rounded-lg border text-left transition-all duration-300 outline-none flex items-center gap-3
-                          ${mode === 'countdown' ? 'border-[#4a3b32] bg-[#f4efe8]' : 'border-[#e0d6c8] hover:bg-[#f8f5f0]'}`}
+                        className={`w-full p-3 text-left outline-none flex items-center gap-3 ${SELECT_BASE} ${selectTone(mode === 'countdown')}`}
                       >
                         <Timer className={`w-5 h-5 shrink-0 ${mode === 'countdown' ? 'text-[#4a3b32]' : 'text-[#8a7964]'}`} />
                         <div>
@@ -203,8 +235,7 @@ export function Menu({ onStart }: MenuProps) {
                         </div>
                       </button>
                       <button onClick={() => setMode('countup')}
-                        className={`w-full p-3 rounded-lg border text-left transition-all duration-300 outline-none flex items-center gap-3
-                          ${mode === 'countup' ? 'border-[#4a3b32] bg-[#f4efe8]' : 'border-[#e0d6c8] hover:bg-[#f8f5f0]'}`}
+                        className={`w-full p-3 text-left outline-none flex items-center gap-3 ${SELECT_BASE} ${selectTone(mode === 'countup')}`}
                       >
                         <ScanFace className={`w-5 h-5 shrink-0 ${mode === 'countup' ? 'text-[#4a3b32]' : 'text-[#8a7964]'}`} />
                         <div>
@@ -262,8 +293,7 @@ export function Menu({ onStart }: MenuProps) {
                           const isSelected = selectedAddons.includes(addon.id);
                           return (
                             <button key={addon.id} onClick={() => toggleAddon(addon.id)}
-                              className={`w-full py-4 px-5 rounded-lg border text-base font-serif text-left transition-colors duration-300
-                                ${isSelected ? 'border-[#4a3b32] bg-[#f4efe8] text-[#3e2723]' : 'border-[#e0d6c8] text-[#6b5a4e] hover:border-[#4a3b32] hover:bg-[#f8f5f0]'}`}
+                              className={`w-full py-4 px-5 text-base font-serif text-left text-[#3e2723] ${SELECT_BASE} ${selectTone(isSelected)}`}
                             >
                               {addon.name}
                             </button>
