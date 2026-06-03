@@ -29,8 +29,8 @@ export function Menu({ onStart }: MenuProps) {
     .reduce((a, b) => a + b, 0);
   const totalTime = currentConfig.baseTime + addonsTotal;
 
-  const coffeesPage1 = COFFEE_MENU.slice(0, 3); // 1-Minute Test, Espresso, Americano
-  const coffeesPage2 = COFFEE_MENU.slice(3);    // Cappuccino, Café Latte
+  const coffeesPage1 = COFFEE_MENU.slice(0, 2); // 1-Minute Test, Espresso
+  const coffeesPage2 = COFFEE_MENU.slice(2);    // Americano, Cappuccino, Café Latte
 
   const paginate = (newDirection: number) => {
     setDirection(newDirection);
@@ -134,7 +134,7 @@ export function Menu({ onStart }: MenuProps) {
           <div className="absolute top-0 bottom-0 left-0 w-10 bg-gradient-to-r from-[rgba(0,0,0,0.06)] to-transparent pointer-events-none" />
 
           {/* Header */}
-          <div className="flex justify-between items-end mb-5 pl-4 border-b border-[#e0d6c8] pb-4">
+          <div className="flex justify-between items-end mb-8 pl-4 border-b border-[#e0d6c8] pb-5">
             <h2 className="text-xl font-serif font-semibold tracking-widest text-[#3e2723] uppercase">The Menu</h2>
             <span className="text-base font-serif text-[#8a7964]">Page {menuPage + 1} of 2</span>
           </div>
@@ -150,10 +150,10 @@ export function Menu({ onStart }: MenuProps) {
                   initial="initial"
                   animate="animate"
                   exit="exit"
-                  className="space-y-3 pl-4 absolute inset-0 w-full bg-[#fdfbf7]"
+                  className="space-y-4 pl-4 absolute inset-0 w-full bg-[#fdfbf7]"
                 >
                   {/* Mode selector — 竖排 */}
-                  <div className="mb-3">
+                  <div className="mb-4">
                     <h3 className="text-sm font-semibold tracking-widest text-[#8a7964] uppercase mb-2">Mode</h3>
                     <div className="flex flex-col gap-2">
                       <button
@@ -280,7 +280,7 @@ export function Menu({ onStart }: MenuProps) {
           </div>
 
           {/* Persistent Footer */}
-          <div className="mt-auto pt-4 pl-4 border-t border-[#e0d6c8] relative z-10 bg-[#fdfbf7]">
+          <div className="mt-auto pt-5 pl-4 border-t border-[#e0d6c8] relative z-10 bg-[#fdfbf7]">
             <div className="flex justify-between items-center mb-4">
               <span className="font-serif italic text-lg text-gray-600">
                 {mode === 'countdown' ? 'Total Brew Time' : 'Focus Style'}
