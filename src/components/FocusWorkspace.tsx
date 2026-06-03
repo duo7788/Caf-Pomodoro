@@ -4,7 +4,7 @@ import { CoffeeConfig } from '../types';
 import { ArrowLeft, Eye, Coffee, LogOut, Camera } from 'lucide-react';
 import { useAttention, DEFAULT_CONFIG, type AttnState } from '../hooks/useAttention';
 import { useCoffeeLevel } from '../hooks/useCoffeeLevel';
-import { addFocusMs } from '../stats';
+import { addCup, recordFocusSession } from '../stats';
 
 function formatDuration(ms: number): string {
   const total = Math.round(ms / 1000);
@@ -99,14 +99,15 @@ export function FocusWorkspace({ coffeeConfig, selectedAddons, onBack }: FocusWo
     if (running) coffee.ingest(attention.reading.state);
   }, [attention.reading.state, running, coffee]);
 
-  // 这一杯结束时，把本杯专注时长累加进今日统计（仅一次）
+  // 这一杯结束时，记一杯 + 本杯圈痕数 + 最长单段心流，刷新今日记录（仅一次）
   const recordedRef = useRef(false);
   useEffect(() => {
     if (ended && !recordedRef.current) {
       recordedRef.current = true;
-      addFocusMs(coffee.totalFocusMs);
+      addCup();
+      recordFocusSession(coffee.rings.length, coffee.maxFocusMs);
     }
-  }, [ended, coffee.totalFocusMs]);
+  }, [ended, coffee.rings.length, coffee.maxFocusMs]);
 
   const handleEnd = () => {
     setEnded(true);

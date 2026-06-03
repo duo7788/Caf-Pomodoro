@@ -1,12 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CoffeeType, FocusMode, COFFEE_MENU, ADDONS } from '../types';
 import { Coffee, Play, ChevronRight, ChevronLeft, Timer, ScanFace } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getCupsToday, getFocusMsToday } from '../stats';
+import { getStatsToday } from '../stats';
 
 interface MenuProps {
   onStart: (coffee: CoffeeType, addons: string[], mode: FocusMode) => void;
 }
+
+/** 「最长专注记录」展示用：小时/分钟/秒 */
+function formatFocus(ms: number): string {
+  const sec = Math.round(ms / 1000);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return `${h} 时 ${m} 分`;
+  if (m > 0) return `${m} 分钟`;
+  return `${sec} 秒`;
+}
+
+/**
+ * 选中态统一以「咖啡单品」为基准：圆角 + 底边线；
+ * 选中＝浅底 + 深色底边线，未选＝透明、悬停浅底。
+ */
+const SELECT_BASE = 'rounded-lg border-b transition-all duration-300';
+const selectTone = (active: boolean) =>
+  active
+    ? 'bg-[#f4efe8] border-[#4a3b32]'
+    : 'bg-transparent border-transparent hover:bg-[#f8f5f0]';
 
 export function Menu({ onStart }: MenuProps) {
   const [mode, setMode] = useState<FocusMode>('countdown');
@@ -14,8 +34,21 @@ export function Menu({ onStart }: MenuProps) {
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [menuPage, setMenuPage] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [cupsToday] = useState(getCupsToday);
-  const [focusMinToday] = useState(() => Math.round(getFocusMsToday() / 60000));
+  const [stats] = useState(getStatsToday);
+
+  // 书本按设计尺寸 1400×940 等比缩放填满视口（字号随之放大），
+  // 避免在大窗口下封顶居中、四周留白、字显得又小又空。
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const compute = () => {
+      const pad = 32; // 视口边距
+      const s = Math.min((window.innerWidth - pad) / 1400, (window.innerHeight - pad) / 940);
+      setScale(Math.min(s, 1.6)); // 上限防止超大屏过度放大
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
 
   const toggleAddon = (id: string) => {
     setSelectedAddons(prev =>
@@ -29,13 +62,37 @@ export function Menu({ onStart }: MenuProps) {
     .reduce((a, b) => a + b, 0);
   const totalTime = currentConfig.baseTime + addonsTotal;
 
-  const coffeesPage1 = COFFEE_MENU.slice(0, 2); // 1-Minute Test, Espresso
-  const coffeesPage2 = COFFEE_MENU.slice(2);    // Americano, Cappuccino, Café Latte
+  const coffeesPage1 = COFFEE_MENU.slice(0, 3); // 1-Minute Test, Espresso, Americano
+  const coffeesPage2 = COFFEE_MENU.slice(3);    // Cappuccino, Café Latte
+
+  const TOTAL_PAGES = 2;
 
   const paginate = (newDirection: number) => {
     setDirection(newDirection);
-    setMenuPage(prev => prev + newDirection);
+    setMenuPage(prev => Math.min(TOTAL_PAGES - 1, Math.max(0, prev + newDirection)));
   };
+
+  const PageBtn = ({ dir }: { dir: 1 | -1 }) => (
+    <button
+      onClick={() => paginate(dir)}
+      className="group relative flex items-center gap-2 bg-[#fdfbf7] border-2 border-[#d3c9b7] text-[#4a3b32] font-serif font-semibold tracking-wider uppercase text-sm px-6 py-3 rounded-md hover:border-[#4a3b32] hover:bg-[#f4efe8] shadow-[4px_4px_0_#d3c9b7] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
+    >
+      {dir === -1 && <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform z-10 relative" />}
+      <span className="z-10 relative">{dir === 1 ? 'Next Page' : 'Prev Page'}</span>
+      {dir === 1 && <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform z-10 relative" />}
+      {dir === 1 ? (
+        <>
+          <div className="absolute right-[-2px] bottom-[-2px] w-0 h-0 border-l-[16px] border-t-[16px] border-l-[#d3c9b7] border-t-transparent z-20 pointer-events-none" />
+          <div className="absolute right-[-2px] bottom-[-2px] w-1 h-1 border-r-[16px] border-b-[16px] border-r-[#fdfbf7] border-b-[#fdfbf7] z-10 pointer-events-none" />
+        </>
+      ) : (
+        <>
+          <div className="absolute left-[-2px] bottom-[-2px] w-0 h-0 border-r-[16px] border-t-[16px] border-r-[#d3c9b7] border-t-transparent z-20 pointer-events-none" />
+          <div className="absolute left-[-2px] bottom-[-2px] w-1 h-1 border-l-[16px] border-b-[16px] border-l-[#fdfbf7] border-b-[#fdfbf7] z-10 pointer-events-none" />
+        </>
+      )}
+    </button>
+  );
 
   const pageVariants = {
     initial: (dir: number) => ({
@@ -64,12 +121,7 @@ export function Menu({ onStart }: MenuProps) {
     <button
       key={coffee.id}
       onClick={() => setSelectedCoffee(coffee.id)}
-      className={`w-full text-left ${compact ? 'py-3 px-4' : 'py-4 px-5'} rounded-lg flex items-center justify-between transition-all duration-300 border-b
-        ${selectedCoffee === coffee.id
-          ? 'bg-[#f4efe8] border-[#4a3b32]'
-          : 'bg-transparent border-transparent hover:bg-[#f8f5f0]'
-        }
-      `}
+      className={`w-full text-left ${compact ? 'py-3 px-4' : 'py-4 px-5'} flex items-center justify-between ${SELECT_BASE} ${selectTone(selectedCoffee === coffee.id)}`}
     >
       <div className="flex flex-col">
         <span className="flex items-baseline gap-2">
@@ -88,7 +140,10 @@ export function Menu({ onStart }: MenuProps) {
     <div className="flex items-center justify-center min-h-screen bg-[#ece5db] font-sans p-4 overflow-hidden">
 
       {/* Book Container */}
-      <div className="flex w-full h-[calc(100vh-1.5rem)] max-w-[1400px] max-h-[940px] shadow-2xl relative rounded-xl bg-[#4a3b32]">
+      <div
+        className="flex w-[1400px] h-[940px] shadow-2xl relative rounded-xl bg-[#4a3b32]"
+        style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+      >
 
         {/* Left Cover */}
         <div className="flex-1 bg-[#3a2e27] rounded-l-xl relative flex flex-col justify-center items-center p-12 text-center border-r-[14px] border-[#2b221d]">
@@ -110,12 +165,31 @@ export function Menu({ onStart }: MenuProps) {
             and enjoy the ambient percolation of your thoughts.
           </p>
 
-          {(cupsToday > 0 || focusMinToday > 0) && (
-            <p className="mt-8 text-sm text-[#9a8b7c] font-serif tracking-wide">
-              {cupsToday > 0 && <>{cupsToday} 杯 ☕</>}
-              {cupsToday > 0 && focusMinToday > 0 && ' · '}
-              {focusMinToday > 0 && <>专注 {focusMinToday} 分钟</>}
-            </p>
+          {(stats.cups > 0 || stats.focusSessions > 0 || stats.longestFocusMs > 0) && (
+            <div className="mt-10 flex flex-col items-center gap-2">
+              {/* 最长专注记录 —— 大字主角 */}
+              {stats.longestFocusMs > 0 && (
+                <div className="text-center mb-1">
+                  <div className="text-4xl font-serif text-[#f0e9da] tracking-wide drop-shadow-sm leading-none">
+                    {formatFocus(stats.longestFocusMs)}
+                  </div>
+                  <div className="mt-2 text-[11px] tracking-[0.25em] uppercase text-[#9a8b7c]">
+                    最长专注记录
+                  </div>
+                </div>
+              )}
+
+              {/* 杯数 · 圈痕 —— 小字 */}
+              <p className="text-sm text-[#9a8b7c] font-serif tracking-wide">
+                今天 {stats.cups} 杯 ☕
+                {stats.focusSessions > 0 && <> · {stats.rings} 道圈痕</>}
+              </p>
+              {stats.focusSessions > 0 && (
+                <p className="text-[10px] text-[#7d7062] tracking-wide">
+                  圈痕 = 正计时中被打断的分心次数
+                </p>
+              )}
+            </div>
           )}
         </div>
 
@@ -136,30 +210,23 @@ export function Menu({ onStart }: MenuProps) {
           {/* Header */}
           <div className="flex justify-between items-end mb-8 pl-4 border-b border-[#e0d6c8] pb-5">
             <h2 className="text-xl font-serif font-semibold tracking-widest text-[#3e2723] uppercase">The Menu</h2>
-            <span className="text-base font-serif text-[#8a7964]">Page {menuPage + 1} of 2</span>
+            <span className="text-base font-serif text-[#8a7964]">Page {menuPage + 1} of {TOTAL_PAGES}</span>
           </div>
 
           {/* Paginated Content */}
           <div className="flex-1 relative" style={{ perspective: '1200px' }}>
             <AnimatePresence initial={false} custom={direction} mode="wait">
-              {menuPage === 0 ? (
-                <motion.div
-                  key="page0"
-                  custom={direction}
-                  variants={pageVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  className="space-y-4 pl-4 absolute inset-0 w-full bg-[#fdfbf7]"
+
+              {/* ── PAGE 1: Mode + 花线 + Coffees(3) ── */}
+              {menuPage === 0 && (
+                <motion.div key="page0" custom={direction} variants={pageVariants} initial="initial" animate="animate" exit="exit"
+                  className="pl-4 absolute inset-0 w-full bg-[#fdfbf7] flex flex-col"
                 >
-                  {/* Mode selector — 竖排 */}
-                  <div className="mb-4">
+                  <div>
                     <h3 className="text-sm font-semibold tracking-widest text-[#8a7964] uppercase mb-2">Mode</h3>
                     <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => setMode('countdown')}
-                        className={`w-full p-3 rounded-lg border text-left transition-all duration-300 outline-none flex items-center gap-3
-                          ${mode === 'countdown' ? 'border-[#4a3b32] bg-[#f4efe8]' : 'border-[#e0d6c8] hover:bg-[#f8f5f0]'}`}
+                      <button onClick={() => setMode('countdown')}
+                        className={`w-full p-3 text-left outline-none flex items-center gap-3 ${SELECT_BASE} ${selectTone(mode === 'countdown')}`}
                       >
                         <Timer className={`w-5 h-5 shrink-0 ${mode === 'countdown' ? 'text-[#4a3b32]' : 'text-[#8a7964]'}`} />
                         <div>
@@ -167,10 +234,8 @@ export function Menu({ onStart }: MenuProps) {
                           <span className="text-xs text-gray-500">一杯咖啡的时间</span>
                         </div>
                       </button>
-                      <button
-                        onClick={() => setMode('countup')}
-                        className={`w-full p-3 rounded-lg border text-left transition-all duration-300 outline-none flex items-center gap-3
-                          ${mode === 'countup' ? 'border-[#4a3b32] bg-[#f4efe8]' : 'border-[#e0d6c8] hover:bg-[#f8f5f0]'}`}
+                      <button onClick={() => setMode('countup')}
+                        className={`w-full p-3 text-left outline-none flex items-center gap-3 ${SELECT_BASE} ${selectTone(mode === 'countup')}`}
                       >
                         <ScanFace className={`w-5 h-5 shrink-0 ${mode === 'countup' ? 'text-[#4a3b32]' : 'text-[#8a7964]'}`} />
                         <div>
@@ -180,40 +245,10 @@ export function Menu({ onStart }: MenuProps) {
                       </button>
                     </div>
                   </div>
-
-                  {coffeesPage1.map(coffee => renderCoffeeItem(coffee))}
-
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      onClick={() => paginate(1)}
-                      className="group relative flex items-center gap-2 bg-[#fdfbf7] border-2 border-[#d3c9b7] text-[#4a3b32] font-serif font-semibold tracking-wider uppercase text-sm px-6 py-3 rounded-md hover:border-[#4a3b32] hover:bg-[#f4efe8] shadow-[4px_4px_0_#d3c9b7] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
-                    >
-                      <span className="z-10 relative">Next Page</span>
-                      <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform z-10 relative" />
-                      <div className="absolute right-[-2px] bottom-[-2px] w-0 h-0 border-l-[16px] border-t-[16px] border-l-[#d3c9b7] border-t-transparent transition-all group-hover:border-l-[20px] group-hover:border-t-[20px] z-20 pointer-events-none" />
-                      <div className="absolute right-[-2px] bottom-[-2px] w-1 h-1 border-r-[16px] border-b-[16px] border-r-[#fdfbf7] border-b-[#fdfbf7] group-hover:border-r-[20px] group-hover:border-b-[20px] z-10 pointer-events-none transition-all" />
-                    </button>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="page1"
-                  custom={direction}
-                  variants={pageVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  className="pl-4 absolute inset-0 w-full bg-[#fdfbf7] flex flex-col"
-                >
-                  {/* 咖啡列表，与 page 1 相同行距 */}
-                  <div className="space-y-4">
-                    {coffeesPage2.map(coffee => renderCoffeeItem(coffee))}
-                  </div>
-
-                  {/* 花体装饰分隔线 */}
+                  {/* 花装饰线条 */}
                   <div className="flex items-center gap-3 my-5">
                     <div className="flex-1 h-px bg-[#d3c9b7]" />
-                    <svg width="60" height="16" viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="60" height="16" viewBox="0 0 60 16" fill="none">
                       <path d="M2 8 Q8 2 15 8 Q22 14 29 8" stroke="#c4b49e" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
                       <path d="M31 8 Q38 2 45 8 Q52 14 58 8" stroke="#c4b49e" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
                       <circle cx="30" cy="8" r="2.5" fill="#c4b49e"/>
@@ -221,23 +256,44 @@ export function Menu({ onStart }: MenuProps) {
                     </svg>
                     <div className="flex-1 h-px bg-[#d3c9b7]" />
                   </div>
+                  {/* 咖啡单品小标题 */}
+                  <h3 className="text-sm font-semibold tracking-widest text-[#8a7964] uppercase mb-3">Coffees</h3>
+                  <div className="space-y-4">
+                    {coffeesPage1.map(coffee => renderCoffeeItem(coffee))}
+                  </div>
+                  <div className="flex justify-end mt-auto mb-2">
+                    <PageBtn dir={1} />
+                  </div>
+                </motion.div>
+              )}
 
-                  {/* Add-ons — 竖排，仅倒计时模式 */}
+              {/* ── PAGE 2: 拿铁 + 花线 + Add-ons + 手绘图 + 上一页 ── */}
+              {menuPage === 1 && (
+                <motion.div key="page1" custom={direction} variants={pageVariants} initial="initial" animate="animate" exit="exit"
+                  className="pl-4 absolute inset-0 w-full bg-[#fdfbf7] flex flex-col"
+                >
+                  <div className="space-y-4">
+                    {coffeesPage2.map(coffee => renderCoffeeItem(coffee))}
+                  </div>
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-[#d3c9b7]" />
+                    <svg width="60" height="16" viewBox="0 0 60 16" fill="none">
+                      <path d="M2 8 Q8 2 15 8 Q22 14 29 8" stroke="#c4b49e" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+                      <path d="M31 8 Q38 2 45 8 Q52 14 58 8" stroke="#c4b49e" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+                      <circle cx="30" cy="8" r="2.5" fill="#c4b49e"/>
+                      <circle cx="30" cy="8" r="1" fill="#fdfbf7"/>
+                    </svg>
+                    <div className="flex-1 h-px bg-[#d3c9b7]" />
+                  </div>
                   {mode === 'countdown' && (
                     <div>
-                      <h3 className="text-xs font-semibold tracking-widest text-[#8a7964] uppercase mb-2">Add-ons</h3>
+                      <h3 className="text-xs font-semibold tracking-widest text-[#8a7964] uppercase mb-3">Add-ons</h3>
                       <div className="flex flex-col gap-2">
                         {ADDONS.map(addon => {
                           const isSelected = selectedAddons.includes(addon.id);
                           return (
-                            <button
-                              key={addon.id}
-                              onClick={() => toggleAddon(addon.id)}
-                              className={`w-full py-4 px-5 rounded-lg border text-base font-serif text-left transition-colors duration-300
-                                ${isSelected
-                                  ? 'border-[#4a3b32] bg-[#f4efe8] text-[#3e2723]'
-                                  : 'border-[#e0d6c8] text-[#6b5a4e] hover:border-[#4a3b32] hover:bg-[#f8f5f0]'
-                                }`}
+                            <button key={addon.id} onClick={() => toggleAddon(addon.id)}
+                              className={`w-full py-4 px-5 text-base font-serif text-left text-[#3e2723] ${SELECT_BASE} ${selectTone(isSelected)}`}
                             >
                               {addon.name}
                             </button>
@@ -246,15 +302,11 @@ export function Menu({ onStart }: MenuProps) {
                       </div>
                     </div>
                   )}
-
-                  {/* 手绘咖啡杯插画（空白区装饰） */}
-                  <div className="flex items-center justify-center opacity-[0.07] pointer-events-none select-none py-2">
-                    <svg width="100" height="100" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <div className="flex-1 flex items-center justify-center opacity-[0.07] pointer-events-none select-none">
+                    <svg width="100" height="100" viewBox="0 0 120 120" fill="none">
                       <ellipse cx="60" cy="98" rx="38" ry="7" stroke="#4a3b32" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M32 42 Q30 78 40 88 Q55 98 60 98 Q65 98 80 88 Q90 78 88 42 Z"
-                        stroke="#4a3b32" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M88 52 Q106 52 106 65 Q106 78 88 78"
-                        stroke="#4a3b32" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                      <path d="M32 42 Q30 78 40 88 Q55 98 60 98 Q65 98 80 88 Q90 78 88 42 Z" stroke="#4a3b32" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M88 52 Q106 52 106 65 Q106 78 88 78" stroke="#4a3b32" strokeWidth="2" fill="none" strokeLinecap="round"/>
                       <ellipse cx="60" cy="42" rx="28" ry="6" stroke="#4a3b32" strokeWidth="2" fill="none"/>
                       <ellipse cx="60" cy="42" rx="21" ry="4" stroke="#4a3b32" strokeWidth="1.2" fill="none" strokeDasharray="3 1.5"/>
                       <path d="M48 30 Q44 20 48 13" stroke="#4a3b32" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
@@ -262,20 +314,12 @@ export function Menu({ onStart }: MenuProps) {
                       <path d="M72 30 Q68 20 72 13" stroke="#4a3b32" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
                     </svg>
                   </div>
-
-                  <div className="flex justify-start">
-                    <button
-                      onClick={() => paginate(-1)}
-                      className="group relative flex items-center gap-2 bg-[#fdfbf7] border-2 border-[#d3c9b7] text-[#4a3b32] font-serif font-semibold tracking-wider uppercase text-sm px-6 py-3 rounded-md hover:border-[#4a3b32] hover:bg-[#f4efe8] shadow-[4px_4px_0_#d3c9b7] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
-                    >
-                      <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform z-10 relative" />
-                      <span className="z-10 relative">Prev Page</span>
-                      <div className="absolute left-[-2px] bottom-[-2px] w-0 h-0 border-r-[16px] border-t-[16px] border-r-[#d3c9b7] border-t-transparent transition-all group-hover:border-r-[20px] group-hover:border-t-[20px] z-20 pointer-events-none" />
-                      <div className="absolute left-[-2px] bottom-[-2px] w-1 h-1 border-l-[16px] border-b-[16px] border-l-[#fdfbf7] border-b-[#fdfbf7] group-hover:border-l-[20px] group-hover:border-b-[20px] z-10 pointer-events-none transition-all" />
-                    </button>
+                  <div className="flex justify-start mt-auto mb-2">
+                    <PageBtn dir={-1} />
                   </div>
                 </motion.div>
               )}
+
             </AnimatePresence>
           </div>
 

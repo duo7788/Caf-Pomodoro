@@ -80,7 +80,7 @@ export function CoffeeCup({ progress, color, rings, addons = [], liveRings = fal
 
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <svg width="100%" height="100%" viewBox="-20 10 380 350" className="drop-shadow-2xl font-sans" preserveAspectRatio="xMidYMid meet">
+      <svg width="100%" height="100%" viewBox="-40 10 380 350" className="drop-shadow-2xl font-sans" preserveAspectRatio="xMidYMid meet">
         <defs>
           <linearGradient id="frontWall" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#fbf9f6" />
