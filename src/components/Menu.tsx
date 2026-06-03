@@ -32,10 +32,34 @@ export function Menu({ onStart }: MenuProps) {
   const coffeesPage1 = COFFEE_MENU.slice(0, 2); // 1-Minute Test, Espresso
   const coffeesPage2 = COFFEE_MENU.slice(2);    // Americano, Cappuccino, Café Latte
 
+  const TOTAL_PAGES = 3;
+
   const paginate = (newDirection: number) => {
     setDirection(newDirection);
-    setMenuPage(prev => prev + newDirection);
+    setMenuPage(prev => Math.min(TOTAL_PAGES - 1, Math.max(0, prev + newDirection)));
   };
+
+  const PageBtn = ({ dir }: { dir: 1 | -1 }) => (
+    <button
+      onClick={() => paginate(dir)}
+      className="group relative flex items-center gap-2 bg-[#fdfbf7] border-2 border-[#d3c9b7] text-[#4a3b32] font-serif font-semibold tracking-wider uppercase text-sm px-6 py-3 rounded-md hover:border-[#4a3b32] hover:bg-[#f4efe8] shadow-[4px_4px_0_#d3c9b7] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
+    >
+      {dir === -1 && <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform z-10 relative" />}
+      <span className="z-10 relative">{dir === 1 ? 'Next Page' : 'Prev Page'}</span>
+      {dir === 1 && <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform z-10 relative" />}
+      {dir === 1 ? (
+        <>
+          <div className="absolute right-[-2px] bottom-[-2px] w-0 h-0 border-l-[16px] border-t-[16px] border-l-[#d3c9b7] border-t-transparent z-20 pointer-events-none" />
+          <div className="absolute right-[-2px] bottom-[-2px] w-1 h-1 border-r-[16px] border-b-[16px] border-r-[#fdfbf7] border-b-[#fdfbf7] z-10 pointer-events-none" />
+        </>
+      ) : (
+        <>
+          <div className="absolute left-[-2px] bottom-[-2px] w-0 h-0 border-r-[16px] border-t-[16px] border-r-[#d3c9b7] border-t-transparent z-20 pointer-events-none" />
+          <div className="absolute left-[-2px] bottom-[-2px] w-1 h-1 border-l-[16px] border-b-[16px] border-l-[#fdfbf7] border-b-[#fdfbf7] z-10 pointer-events-none" />
+        </>
+      )}
+    </button>
+  );
 
   const pageVariants = {
     initial: (dir: number) => ({
@@ -136,28 +160,22 @@ export function Menu({ onStart }: MenuProps) {
           {/* Header */}
           <div className="flex justify-between items-end mb-8 pl-4 border-b border-[#e0d6c8] pb-5">
             <h2 className="text-xl font-serif font-semibold tracking-widest text-[#3e2723] uppercase">The Menu</h2>
-            <span className="text-base font-serif text-[#8a7964]">Page {menuPage + 1} of 2</span>
+            <span className="text-base font-serif text-[#8a7964]">Page {menuPage + 1} of {TOTAL_PAGES}</span>
           </div>
 
           {/* Paginated Content */}
           <div className="flex-1 relative" style={{ perspective: '1200px' }}>
             <AnimatePresence initial={false} custom={direction} mode="wait">
-              {menuPage === 0 ? (
-                <motion.div
-                  key="page0"
-                  custom={direction}
-                  variants={pageVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
+
+              {/* ── PAGE 1: Mode + 2 coffees ── */}
+              {menuPage === 0 && (
+                <motion.div key="page0" custom={direction} variants={pageVariants} initial="initial" animate="animate" exit="exit"
                   className="space-y-4 pl-4 absolute inset-0 w-full bg-[#fdfbf7]"
                 >
-                  {/* Mode selector — 竖排 */}
-                  <div className="mb-4">
+                  <div>
                     <h3 className="text-sm font-semibold tracking-widest text-[#8a7964] uppercase mb-2">Mode</h3>
                     <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => setMode('countdown')}
+                      <button onClick={() => setMode('countdown')}
                         className={`w-full p-3 rounded-lg border text-left transition-all duration-300 outline-none flex items-center gap-3
                           ${mode === 'countdown' ? 'border-[#4a3b32] bg-[#f4efe8]' : 'border-[#e0d6c8] hover:bg-[#f8f5f0]'}`}
                       >
@@ -167,8 +185,7 @@ export function Menu({ onStart }: MenuProps) {
                           <span className="text-xs text-gray-500">一杯咖啡的时间</span>
                         </div>
                       </button>
-                      <button
-                        onClick={() => setMode('countup')}
+                      <button onClick={() => setMode('countup')}
                         className={`w-full p-3 rounded-lg border text-left transition-all duration-300 outline-none flex items-center gap-3
                           ${mode === 'countup' ? 'border-[#4a3b32] bg-[#f4efe8]' : 'border-[#e0d6c8] hover:bg-[#f8f5f0]'}`}
                       >
@@ -180,40 +197,36 @@ export function Menu({ onStart }: MenuProps) {
                       </button>
                     </div>
                   </div>
-
                   {coffeesPage1.map(coffee => renderCoffeeItem(coffee))}
-
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      onClick={() => paginate(1)}
-                      className="group relative flex items-center gap-2 bg-[#fdfbf7] border-2 border-[#d3c9b7] text-[#4a3b32] font-serif font-semibold tracking-wider uppercase text-sm px-6 py-3 rounded-md hover:border-[#4a3b32] hover:bg-[#f4efe8] shadow-[4px_4px_0_#d3c9b7] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
-                    >
-                      <span className="z-10 relative">Next Page</span>
-                      <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform z-10 relative" />
-                      <div className="absolute right-[-2px] bottom-[-2px] w-0 h-0 border-l-[16px] border-t-[16px] border-l-[#d3c9b7] border-t-transparent transition-all group-hover:border-l-[20px] group-hover:border-t-[20px] z-20 pointer-events-none" />
-                      <div className="absolute right-[-2px] bottom-[-2px] w-1 h-1 border-r-[16px] border-b-[16px] border-r-[#fdfbf7] border-b-[#fdfbf7] group-hover:border-r-[20px] group-hover:border-b-[20px] z-10 pointer-events-none transition-all" />
-                    </button>
+                  <div className="flex justify-end">
+                    <PageBtn dir={1} />
                   </div>
                 </motion.div>
-              ) : (
-                <motion.div
-                  key="page1"
-                  custom={direction}
-                  variants={pageVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
+              )}
+
+              {/* ── PAGE 2: 3 coffees + prev + next ── */}
+              {menuPage === 1 && (
+                <motion.div key="page1" custom={direction} variants={pageVariants} initial="initial" animate="animate" exit="exit"
                   className="pl-4 absolute inset-0 w-full bg-[#fdfbf7] flex flex-col"
                 >
-                  {/* 咖啡列表，与 page 1 相同行距 */}
-                  <div className="space-y-4">
+                  <div className="space-y-4 flex-1">
                     {coffeesPage2.map(coffee => renderCoffeeItem(coffee))}
                   </div>
+                  <div className="pt-4 flex justify-between">
+                    <PageBtn dir={-1} />
+                    <PageBtn dir={1} />
+                  </div>
+                </motion.div>
+              )}
 
-                  {/* 花体装饰分隔线 */}
-                  <div className="flex items-center gap-3 my-5">
+              {/* ── PAGE 3: Add-ons + illustration + prev ── */}
+              {menuPage === 2 && (
+                <motion.div key="page2" custom={direction} variants={pageVariants} initial="initial" animate="animate" exit="exit"
+                  className="pl-4 absolute inset-0 w-full bg-[#fdfbf7] flex flex-col"
+                >
+                  <div className="flex items-center gap-3 mb-5">
                     <div className="flex-1 h-px bg-[#d3c9b7]" />
-                    <svg width="60" height="16" viewBox="0 0 60 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="60" height="16" viewBox="0 0 60 16" fill="none">
                       <path d="M2 8 Q8 2 15 8 Q22 14 29 8" stroke="#c4b49e" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
                       <path d="M31 8 Q38 2 45 8 Q52 14 58 8" stroke="#c4b49e" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
                       <circle cx="30" cy="8" r="2.5" fill="#c4b49e"/>
@@ -221,23 +234,16 @@ export function Menu({ onStart }: MenuProps) {
                     </svg>
                     <div className="flex-1 h-px bg-[#d3c9b7]" />
                   </div>
-
-                  {/* Add-ons — 竖排，仅倒计时模式 */}
                   {mode === 'countdown' && (
                     <div>
-                      <h3 className="text-xs font-semibold tracking-widest text-[#8a7964] uppercase mb-2">Add-ons</h3>
+                      <h3 className="text-xs font-semibold tracking-widest text-[#8a7964] uppercase mb-3">Add-ons</h3>
                       <div className="flex flex-col gap-2">
                         {ADDONS.map(addon => {
                           const isSelected = selectedAddons.includes(addon.id);
                           return (
-                            <button
-                              key={addon.id}
-                              onClick={() => toggleAddon(addon.id)}
+                            <button key={addon.id} onClick={() => toggleAddon(addon.id)}
                               className={`w-full py-4 px-5 rounded-lg border text-base font-serif text-left transition-colors duration-300
-                                ${isSelected
-                                  ? 'border-[#4a3b32] bg-[#f4efe8] text-[#3e2723]'
-                                  : 'border-[#e0d6c8] text-[#6b5a4e] hover:border-[#4a3b32] hover:bg-[#f8f5f0]'
-                                }`}
+                                ${isSelected ? 'border-[#4a3b32] bg-[#f4efe8] text-[#3e2723]' : 'border-[#e0d6c8] text-[#6b5a4e] hover:border-[#4a3b32] hover:bg-[#f8f5f0]'}`}
                             >
                               {addon.name}
                             </button>
@@ -246,15 +252,11 @@ export function Menu({ onStart }: MenuProps) {
                       </div>
                     </div>
                   )}
-
-                  {/* 手绘咖啡杯插画（空白区装饰） */}
-                  <div className="flex items-center justify-center opacity-[0.07] pointer-events-none select-none py-2">
-                    <svg width="100" height="100" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <div className="flex-1 flex items-center justify-center opacity-[0.07] pointer-events-none select-none">
+                    <svg width="100" height="100" viewBox="0 0 120 120" fill="none">
                       <ellipse cx="60" cy="98" rx="38" ry="7" stroke="#4a3b32" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M32 42 Q30 78 40 88 Q55 98 60 98 Q65 98 80 88 Q90 78 88 42 Z"
-                        stroke="#4a3b32" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M88 52 Q106 52 106 65 Q106 78 88 78"
-                        stroke="#4a3b32" strokeWidth="2" fill="none" strokeLinecap="round"/>
+                      <path d="M32 42 Q30 78 40 88 Q55 98 60 98 Q65 98 80 88 Q90 78 88 42 Z" stroke="#4a3b32" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M88 52 Q106 52 106 65 Q106 78 88 78" stroke="#4a3b32" strokeWidth="2" fill="none" strokeLinecap="round"/>
                       <ellipse cx="60" cy="42" rx="28" ry="6" stroke="#4a3b32" strokeWidth="2" fill="none"/>
                       <ellipse cx="60" cy="42" rx="21" ry="4" stroke="#4a3b32" strokeWidth="1.2" fill="none" strokeDasharray="3 1.5"/>
                       <path d="M48 30 Q44 20 48 13" stroke="#4a3b32" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
@@ -262,20 +264,12 @@ export function Menu({ onStart }: MenuProps) {
                       <path d="M72 30 Q68 20 72 13" stroke="#4a3b32" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
                     </svg>
                   </div>
-
                   <div className="flex justify-start">
-                    <button
-                      onClick={() => paginate(-1)}
-                      className="group relative flex items-center gap-2 bg-[#fdfbf7] border-2 border-[#d3c9b7] text-[#4a3b32] font-serif font-semibold tracking-wider uppercase text-sm px-6 py-3 rounded-md hover:border-[#4a3b32] hover:bg-[#f4efe8] shadow-[4px_4px_0_#d3c9b7] active:shadow-none active:translate-x-1 active:translate-y-1 transition-all"
-                    >
-                      <ChevronLeft size={18} className="group-hover:-translate-x-1 transition-transform z-10 relative" />
-                      <span className="z-10 relative">Prev Page</span>
-                      <div className="absolute left-[-2px] bottom-[-2px] w-0 h-0 border-r-[16px] border-t-[16px] border-r-[#d3c9b7] border-t-transparent transition-all group-hover:border-r-[20px] group-hover:border-t-[20px] z-20 pointer-events-none" />
-                      <div className="absolute left-[-2px] bottom-[-2px] w-1 h-1 border-l-[16px] border-b-[16px] border-l-[#fdfbf7] border-b-[#fdfbf7] group-hover:border-l-[20px] group-hover:border-b-[20px] z-10 pointer-events-none transition-all" />
-                    </button>
+                    <PageBtn dir={-1} />
                   </div>
                 </motion.div>
               )}
+
             </AnimatePresence>
           </div>
 
