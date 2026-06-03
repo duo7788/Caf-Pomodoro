@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CoffeeType, FocusMode, COFFEE_MENU, ADDONS } from '../types';
 import { Coffee, Play, ChevronRight, ChevronLeft, Timer, ScanFace } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -17,6 +17,20 @@ export function Menu({ onStart }: MenuProps) {
   const [cupsToday] = useState(getCupsToday);
   const [focusMinToday] = useState(() => Math.round(getFocusMsToday() / 60000));
 
+  // 书本按设计尺寸 1400×940 等比缩放填满视口（字号随之放大），
+  // 避免在大窗口下封顶居中、四周留白、字显得又小又空。
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const compute = () => {
+      const pad = 32; // 视口边距
+      const s = Math.min((window.innerWidth - pad) / 1400, (window.innerHeight - pad) / 940);
+      setScale(Math.min(s, 1.6)); // 上限防止超大屏过度放大
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, []);
+
   const toggleAddon = (id: string) => {
     setSelectedAddons(prev =>
       prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]
@@ -29,10 +43,10 @@ export function Menu({ onStart }: MenuProps) {
     .reduce((a, b) => a + b, 0);
   const totalTime = currentConfig.baseTime + addonsTotal;
 
-  const coffeesPage1 = COFFEE_MENU.slice(0, 2); // 1-Minute Test, Espresso
-  const coffeesPage2 = COFFEE_MENU.slice(2);    // Americano, Cappuccino, Café Latte
+  const coffeesPage1 = COFFEE_MENU.slice(0, 3); // 1-Minute Test, Espresso, Americano
+  const coffeesPage2 = COFFEE_MENU.slice(3);    // Cappuccino, Café Latte
 
-  const TOTAL_PAGES = 3;
+  const TOTAL_PAGES = 2;
 
   const paginate = (newDirection: number) => {
     setDirection(newDirection);
@@ -112,7 +126,10 @@ export function Menu({ onStart }: MenuProps) {
     <div className="flex items-center justify-center min-h-screen bg-[#ece5db] font-sans p-4 overflow-hidden">
 
       {/* Book Container */}
-      <div className="flex w-full h-[calc(100vh-1.5rem)] max-w-[1400px] max-h-[940px] shadow-2xl relative rounded-xl bg-[#4a3b32]">
+      <div
+        className="flex w-[1400px] h-[940px] shadow-2xl relative rounded-xl bg-[#4a3b32]"
+        style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
+      >
 
         {/* Left Cover */}
         <div className="flex-1 bg-[#3a2e27] rounded-l-xl relative flex flex-col justify-center items-center p-12 text-center border-r-[14px] border-[#2b221d]">
@@ -167,10 +184,10 @@ export function Menu({ onStart }: MenuProps) {
           <div className="flex-1 relative" style={{ perspective: '1200px' }}>
             <AnimatePresence initial={false} custom={direction} mode="wait">
 
-              {/* ── PAGE 1: Mode + 2 coffees ── */}
+              {/* ── PAGE 1: Mode + 花线 + Coffees(3) ── */}
               {menuPage === 0 && (
                 <motion.div key="page0" custom={direction} variants={pageVariants} initial="initial" animate="animate" exit="exit"
-                  className="space-y-4 pl-4 absolute inset-0 w-full bg-[#fdfbf7]"
+                  className="pl-4 absolute inset-0 w-full bg-[#fdfbf7] flex flex-col"
                 >
                   <div>
                     <h3 className="text-sm font-semibold tracking-widest text-[#8a7964] uppercase mb-2">Mode</h3>
@@ -197,34 +214,37 @@ export function Menu({ onStart }: MenuProps) {
                       </button>
                     </div>
                   </div>
-                  {coffeesPage1.map(coffee => renderCoffeeItem(coffee))}
-                  <div className="flex justify-end">
+                  {/* 花装饰线条 */}
+                  <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-[#d3c9b7]" />
+                    <svg width="60" height="16" viewBox="0 0 60 16" fill="none">
+                      <path d="M2 8 Q8 2 15 8 Q22 14 29 8" stroke="#c4b49e" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+                      <path d="M31 8 Q38 2 45 8 Q52 14 58 8" stroke="#c4b49e" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+                      <circle cx="30" cy="8" r="2.5" fill="#c4b49e"/>
+                      <circle cx="30" cy="8" r="1" fill="#fdfbf7"/>
+                    </svg>
+                    <div className="flex-1 h-px bg-[#d3c9b7]" />
+                  </div>
+                  {/* 咖啡单品小标题 */}
+                  <h3 className="text-sm font-semibold tracking-widest text-[#8a7964] uppercase mb-3">Coffees</h3>
+                  <div className="space-y-4">
+                    {coffeesPage1.map(coffee => renderCoffeeItem(coffee))}
+                  </div>
+                  <div className="flex justify-end mt-auto mb-2">
                     <PageBtn dir={1} />
                   </div>
                 </motion.div>
               )}
 
-              {/* ── PAGE 2: 3 coffees + prev + next ── */}
+              {/* ── PAGE 2: 拿铁 + 花线 + Add-ons + 手绘图 + 上一页 ── */}
               {menuPage === 1 && (
                 <motion.div key="page1" custom={direction} variants={pageVariants} initial="initial" animate="animate" exit="exit"
                   className="pl-4 absolute inset-0 w-full bg-[#fdfbf7] flex flex-col"
                 >
-                  <div className="space-y-4 flex-1">
+                  <div className="space-y-4">
                     {coffeesPage2.map(coffee => renderCoffeeItem(coffee))}
                   </div>
-                  <div className="pt-4 flex justify-between">
-                    <PageBtn dir={-1} />
-                    <PageBtn dir={1} />
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ── PAGE 3: Add-ons + illustration + prev ── */}
-              {menuPage === 2 && (
-                <motion.div key="page2" custom={direction} variants={pageVariants} initial="initial" animate="animate" exit="exit"
-                  className="pl-4 absolute inset-0 w-full bg-[#fdfbf7] flex flex-col"
-                >
-                  <div className="flex items-center gap-3 mb-5">
+                  <div className="flex items-center gap-3 my-5">
                     <div className="flex-1 h-px bg-[#d3c9b7]" />
                     <svg width="60" height="16" viewBox="0 0 60 16" fill="none">
                       <path d="M2 8 Q8 2 15 8 Q22 14 29 8" stroke="#c4b49e" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
@@ -264,7 +284,7 @@ export function Menu({ onStart }: MenuProps) {
                       <path d="M72 30 Q68 20 72 13" stroke="#4a3b32" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
                     </svg>
                   </div>
-                  <div className="flex justify-start">
+                  <div className="flex justify-start mt-auto mb-2">
                     <PageBtn dir={-1} />
                   </div>
                 </motion.div>
