@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import './Menu.css';
 import { CoffeeType, FocusMode, COFFEE_MENU, ADDONS } from '../types';
 import { Coffee, Play, ChevronRight, ChevronLeft, Timer, ScanFace } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getStatsToday } from '../stats';
 
 interface MenuProps {
+  loading?: boolean;
   onStart: (coffee: CoffeeType, addons: string[], mode: FocusMode) => void;
 }
 
@@ -28,7 +30,19 @@ const selectTone = (active: boolean) =>
     ? 'bg-[#f4efe8] border-[#4a3b32]'
     : 'bg-transparent border-transparent hover:bg-[#f8f5f0]';
 
-export function Menu({ onStart }: MenuProps) {
+export function Menu({ onStart, loading = false }: MenuProps) {
+  const [bookStage, setBookStage] = useState<'closed' | 'opening' | 'open'>(loading ? 'closed' : 'open');
+  useEffect(() => {
+    if (loading) return;
+    setBookStage(stage => stage === 'closed'
+      ? (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'open' : 'opening')
+      : stage);
+  }, [loading]);
+  useEffect(() => {
+    if (bookStage !== 'opening') return;
+    const timer = window.setTimeout(() => setBookStage('open'), 1700);
+    return () => window.clearTimeout(timer);
+  }, [bookStage]);
   const [mode, setMode] = useState<FocusMode>('countdown');
   const [selectedCoffee, setSelectedCoffee] = useState<CoffeeType>('americano');
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
@@ -137,16 +151,25 @@ export function Menu({ onStart }: MenuProps) {
   );
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#ece5db] font-sans p-4 overflow-hidden">
+    <div className="flex items-center justify-center min-h-screen menu-tabletop font-sans p-4 overflow-hidden">
 
       {/* Book Container */}
       <div
-        className="flex w-[1400px] h-[940px] shadow-2xl relative rounded-xl bg-[#4a3b32]"
+        className={`menu-book book-${bookStage} flex w-[1400px] h-[940px] shadow-2xl relative rounded-xl bg-[#4a3b32]`}
+        inert={bookStage !== 'open'}
+        aria-hidden={bookStage !== 'open' || undefined}
         style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}
       >
 
+        {bookStage !== 'open' && (
+          <div className="notebook-front-cover" aria-hidden="true">
+            <div className="notebook-cover-outside" />
+            <div className="notebook-cover-inside" />
+          </div>
+        )}
+
         {/* Left Cover */}
-        <div className="flex-1 bg-[#3a2e27] rounded-l-xl relative flex flex-col justify-center items-center p-12 text-center border-r-[14px] border-[#2b221d]">
+        <div className="notebook-left-inside flex-1 bg-[#3a2e27] rounded-l-xl relative flex flex-col justify-center items-center p-12 text-center border-r-[14px] border-[#2b221d]">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-black to-transparent pointer-events-none rounded-l-xl" />
 
           <Coffee className="w-20 h-20 mx-auto text-[#d3c9b7] mb-8 drop-shadow-md" strokeWidth={1} />
@@ -194,7 +217,7 @@ export function Menu({ onStart }: MenuProps) {
         </div>
 
         {/* Wire Binding Rings */}
-        <div className="absolute left-1/2 top-6 bottom-6 flex flex-col justify-around items-center -translate-x-1/2 z-20 pointer-events-none w-10">
+        <div className="notebook-binding absolute left-1/2 top-6 bottom-6 flex flex-col justify-around items-center -translate-x-1/2 z-20 pointer-events-none w-10">
           {[...Array(7)].map((_, i) => (
             <div key={i} className="flex flex-col gap-1 w-full relative">
               <div className="w-full h-2 bg-gradient-to-b from-[#e5e5e5] via-[#ffffff] to-[#d4d4d4] rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.5)] border border-[#a1a1a1]" />

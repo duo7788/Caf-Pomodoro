@@ -1,0 +1,106 @@
+/* Dark walnut tabletop: broad boards, fine grain, and soft overhead light. */
+.menu-tabletop {
+  position: relative;
+  isolation: isolate;
+  background-color: #261a13;
+  background-image:
+    radial-gradient(ellipse at 48% 38%, #b57a3c24, #0705038c 100%),
+    repeating-linear-gradient(0deg, transparent 0 179px, #100a0799 180px, #65442a55 182px, transparent 184px),
+    url('/wood-grain.svg');
+  background-size: cover, auto, 900px 500px;
+}
+
+.menu-tabletop > div {
+  box-shadow: 0 30px 65px #0009, 0 4px 12px #0006;
+}
+
+/* The book is visually scaled to the viewport; its unscaled height must not
+   stretch the tabletop and push the bottom controls below the screen. */
+.menu-tabletop {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+}
+
+.menu-tabletop > div {
+  flex-shrink: 0;
+}
+
+/* The closed notebook occupies the right half of the spread. Center that
+   half first, then shift the spread as its cover turns around the wire spine. */
+.menu-book {
+  perspective: 2200px;
+  perspective-origin: 50% 45%;
+}
+.menu-book.book-closed,
+.menu-book.book-opening {
+  background: transparent;
+  box-shadow: none;
+}
+.book-closed {
+  translate: -25% 0;
+}
+.book-opening {
+  animation: notebook-center 1700ms cubic-bezier(.22, .7, .2, 1) both;
+}
+.book-closed .notebook-left-inside {
+  opacity: 0;
+}
+.book-opening .notebook-left-inside {
+  animation: notebook-inside-reveal 1700ms ease both;
+}
+.notebook-front-cover {
+  position: absolute;
+  inset: 0 0 0 50%;
+  z-index: 30;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  border-radius: 2px 14px 14px 2px;
+}
+.notebook-cover-outside,
+.notebook-cover-inside {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: inherit;
+  background: #49362a;
+}
+.notebook-cover-outside {
+  border: 2px solid #70533e;
+  /* Plain cover, raised spine, and a visible stack of paper along the edge. */
+  box-shadow: inset 18px 0 15px -12px #140d09aa,
+    inset -2px 0 3px #b28b5430,
+    3px 2px 0 #e0d4be, 5px 4px 0 #9e8b72,
+    7px 6px 0 #e5dac6, 9px 8px 0 #453021,
+    18px 24px 35px #0007;
+}
+.notebook-cover-inside {
+  transform: rotateY(180deg);
+  background: #3a2e27;
+  box-shadow: inset -14px 0 0 #2b221d;
+}
+.book-opening .notebook-front-cover {
+  animation: notebook-cover-open 1700ms cubic-bezier(.3, .05, .15, 1) both;
+}
+.menu-book .notebook-binding {
+  z-index: 40;
+  filter: drop-shadow(2px 3px 2px #0008);
+}
+@keyframes notebook-center {
+  0%, 12% { translate: -25% 0; }
+  100% { translate: 0 0; }
+}
+@keyframes notebook-cover-open {
+  0%, 12% { transform: rotateY(0deg); opacity: 1; }
+  82% { transform: rotateY(-180deg); opacity: 1; }
+  100% { transform: rotateY(-180deg); opacity: 0; }
+}
+@keyframes notebook-inside-reveal {
+  0%, 50% { opacity: 0; }
+  82%, 100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .book-opening,
+  .book-opening .notebook-front-cover,
+  .book-opening .notebook-left-inside { animation-duration: 1ms; }
+}

@@ -1,0 +1,41 @@
+.coffee-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  animation: coffee-loading-reveal 700ms cubic-bezier(.4, 0, .2, 1) 2800ms both;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, #3b2c2055, transparent 60%), #161310;
+  color: #d5bd99;
+}
+
+.coffee-loading-cup {
+  width: min(226.667px, 52vw);
+  aspect-ratio: 380 / 350;
+  filter: drop-shadow(0 20px 35px #0004);
+}
+
+/* The loading scene is driven by elapsed time; avoid trailing SVG transitions. */
+.coffee-loading-cup svg * {
+  transition: none !important;
+}
+
+.coffee-loading-name {
+  margin-top: 24px;
+  font: italic 20px "Playfair Display", Georgia, serif;
+  letter-spacing: .5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coffee-loading-cup { visibility: hidden; }
+  .coffee-loading-name { margin-top: 0; }
+}
+
+@keyframes coffee-loading-reveal {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
