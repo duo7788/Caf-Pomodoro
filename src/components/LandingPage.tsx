@@ -4,13 +4,15 @@ import { CoffeeCup } from './CoffeeCup';
 import './LandingPage.css';
 
 type DemoMode = 'countup' | 'countdown';
+// Compressed demo: show the first distraction quickly, then contrast each drop
+// with a clear hold at the same height while focused.
 const focusFrames = [
-  { level: 1, label: '专注中', detail: '目光落在手边，时间留给自己。', rings: [] },
-  { level: 1, label: '专注中', detail: '一段专注，正在慢慢沉淀。', rings: [] },
-  { level: .76, label: '片刻分心', detail: '啜一口咖啡，留下一段专注的圈痕。', rings: [{ level: 1, strength: .55 }] },
-  { level: .76, label: '回到专注', detail: '回到手边的事，咖啡也静下来。', rings: [{ level: 1, strength: .55 }] },
-  { level: .48, label: '片刻分心', detail: '专注越久，留在杯壁上的圈痕越深。', rings: [{ level: 1, strength: .55 }, { level: .76, strength: .9 }] },
-  { level: .48, label: '回到专注', detail: '每一道痕迹，都是思考停留过的地方。', rings: [{ level: 1, strength: .55 }, { level: .76, strength: .9 }] },
+  { level: 1, duration: 800, rings: [] },
+  { level: 1, duration: 800, rings: [] },
+  { level: .62, duration: 1100, rings: [{ level: 1, strength: .65 }] },
+  { level: .62, duration: 1600, rings: [{ level: 1, strength: .65 }] },
+  { level: .24, duration: 1100, rings: [{ level: 1, strength: .65 }, { level: .62, strength: .9 }] },
+  { level: .24, duration: 1600, rings: [{ level: 1, strength: .65 }, { level: .62, strength: .9 }] },
 ];
 
 export function LandingPage() {
@@ -20,9 +22,10 @@ export function LandingPage() {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   useEffect(() => {
     if (!playing) return;
-    const interval = window.setInterval(() => setStep(s => (s + 1) % 6), 2600);
-    return () => window.clearInterval(interval);
-  }, [playing, mode]);
+    const timer = window.setTimeout(() => setStep(s => (s + 1) % focusFrames.length),
+      mode === 'countup' ? focusFrames[step].duration : 2600);
+    return () => window.clearTimeout(timer);
+  }, [playing, mode, step]);
 
   const selectMode = (next: DemoMode) => { setMode(next); setStep(0); };
   const isFocus = mode === 'countup';
@@ -67,16 +70,17 @@ export function LandingPage() {
               <div className="demo-heading"><span className="demo-overline">{isFocus ? 'FOLLOW YOUR FLOW' : 'A LITTLE TIME, JUST FOR YOU'}</span><h2>{isFocus ? '跟随专注，慢慢来。' : '一杯美式，二十五分钟。'}</h2></div>
               <div className={`camera-peek ${isFocus ? '' : 'camera-peek-hidden'}`} aria-hidden={!isFocus}>
                 <div className={`camera-illustration ${distracted ? 'is-distracted' : ''}`}><div className="camera-grid" /><div className="person-body" /><div className="person-head" /><div className="face-brackets" /><span className="camera-live-dot" /><span className="camera-sim-label">模拟画面</span></div>
-                <div className="camera-peek-caption"><Camera size={11} /> 摄像头感知专注</div>
+                <div className="camera-peek-caption"><Camera size={13} /> 摄像头状态检测</div>
+                <div className={`detection-pill ${distracted ? 'detection-distracted' : 'detection-focused'}`}><span />{distracted ? '检测到分心' : '检测到专注'}</div>
               </div>
-              <div className="demo-cup"><CoffeeCup progress={level} color="#5b3420" rings={rings} liveRings={isFocus} /></div>
-              <div className={`demo-status ${distracted ? 'status-distracted' : ''}`}><span />{isFocus ? frame.label : step === 5 ? '快喝完了' : '专注进行中'}</div>
-              <p className="demo-scene-caption">{isFocus ? frame.detail : '不用盯着数字，咖啡会陪你走过这段时间。'}</p>
+              <div className={`demo-cup ${isFocus ? 'demo-cup-focus' : ''}`}><CoffeeCup progress={level} color="#5b3420" rings={rings} liveRings={isFocus} /></div>
+              <div className={`demo-status ${isFocus ? `detection-pill ${distracted ? 'detection-distracted' : 'detection-focused'}` : ''}`}><span />{isFocus ? (distracted ? '检测到分心' : '检测到专注') : step === 5 ? '快喝完了' : '专注进行中'}</div>
+              <p className="demo-scene-caption">{isFocus ? (distracted ? '分心，液面快速下降。' : '专注，液面保持不变。') : '不用盯着数字，咖啡会陪你走过这段时间。'}</p>
               <div className="demo-playback"><button onClick={() => setPlaying(p => !p)} aria-label={playing ? '暂停演示' : '播放演示'}>{playing ? <Pause size={15} /> : <Play size={15} />}</button><div className="demo-steps" aria-label={`演示进度 ${step + 1} / 6`}>{focusFrames.map((_, i) => <span key={i} className={i === step ? 'active' : ''} />)}</div><button onClick={() => setStep(0)} aria-label="重播演示"><RotateCcw size={14} /></button></div>
               <div className="scene-corner">{isFocus ? 'CAMERA-ASSISTED FOCUS' : 'CLASSIC POMODORO'}</div>
             </div>
           </div>
-          <div className="demo-footnote"><span className="note-number">{isFocus ? '01' : '02'} /</span><p>{isFocus ? '专注时，咖啡静静等待。分心时，液面下降，杯壁留下刚才那段专注的圈痕。' : '选一杯喜欢的咖啡，设定一段专注时间。液面随时间逐口下降，直到这一杯喝完。'}<small>{isFocus ? '实际使用需开启摄像头；连续专注满 1 分钟后，分心才会留下圈痕。本页仅为模拟演示。' : '无需摄像头。浓缩 15 分钟、美式 25 分钟、卡布奇诺 30 分钟、拿铁 45 分钟。'}</small></p></div>
+          <div className="demo-footnote"><span className="note-number">{isFocus ? '01' : '02'} /</span><p>{isFocus ? '专注，液面不动；分心，液面下降，留下圈痕。' : '选一杯喜欢的咖啡，设定一段专注时间。液面随时间逐口下降，直到这一杯喝完。'}<small>{isFocus ? '实际使用需开启摄像头；连续专注满 1 分钟后，分心才会留下圈痕。' : '无需摄像头。浓缩 15 分钟、美式 25 分钟、卡布奇诺 30 分钟、拿铁 45 分钟。'}</small></p></div>
         </section>
 
       </main>

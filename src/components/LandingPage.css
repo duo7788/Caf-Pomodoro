@@ -6,3 +6,55 @@
 
 /* Space between the demo and footer after removing the feature columns. */
 .landing-demo-section{margin-bottom:48px}
+
+/* Make the simulated camera and its detection feedback legible at a glance. */
+.camera-peek { width: 174px; transform: none; }
+.camera-illustration { height: 126px; border-radius: 10px; }
+.camera-peek .person-body { left: 17%; bottom: -36%; width: 66%; height: 80%; }
+.camera-peek .person-head { left: 38%; top: 20%; width: 25%; height: 40%; }
+.camera-peek .face-brackets { left: 31%; top: 14%; width: 39%; height: 57%; border-width: 2px; }
+.camera-peek .camera-sim-label { font-size: 9px; left: 8px; bottom: 7px; }
+.camera-peek .camera-live-dot { width: 6px; height: 6px; top: 10px; right: 10px; background: #6ade97; }
+.camera-peek .is-distracted .camera-live-dot { background: #ff7979; }
+.camera-peek .is-distracted .face-brackets { border-color: #ff7979; }
+.camera-peek-caption { font-size: 10px; margin: 10px 0; color: #cbbba4; }
+.detection-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 7px 14px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: .5px;
+  transition: color .3s, background-color .3s, border-color .3s;
+}
+.camera-peek > .detection-pill { margin: 0 auto; }
+.detection-pill.detection-focused { color: #b1f7cd; background: #1b4b35; border-color: #5cc88a88; box-shadow: 0 3px 16px #143b2933; }
+.detection-pill.detection-distracted { color: #ffe0de; background: #792f32; border-color: #ff878b99; box-shadow: 0 3px 16px #70252c44; }
+.detection-pill > span { width: 7px; height: 7px; flex-shrink: 0; border-radius: 50%; background: #74e6a2; box-shadow: 0 0 9px #74e6a244; }
+.detection-pill.detection-distracted > span { background: #ff9696; box-shadow: 0 0 9px #ff969644; }
+.demo-scene { height: 514px; }
+@media (min-width:1450px) { .demo-scene { height: 539px; } }
+@media (max-width:700px) {
+  .camera-peek { width: 104px; right: 13px; }
+  .camera-illustration { height: 76px; }
+  .camera-peek .camera-sim-label { font-size: 7px; bottom: 4px; left: 4px; }
+  .camera-peek-caption { font-size: 7px; gap: 3px; margin: 7px 0; }
+  .camera-peek > .detection-pill { font-size: 9px; padding: 5px 8px; gap: 5px; letter-spacing: 0; }
+  .camera-peek .detection-pill > span { width: 5px; height: 5px; }
+  .demo-status.detection-pill { font-size: 11px; padding: 6px 12px; }
+  .demo-scene { height: 474px; }
+}
+
+/* Speed up only the introduction demo, leaving real focus sessions unchanged. */
+@media (prefers-reduced-motion: no-preference) {
+  .demo-cup-focus svg path,
+  .demo-cup-focus svg ellipse {
+    transition-duration: 240ms !important;
+  }
+}
